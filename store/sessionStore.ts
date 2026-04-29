@@ -80,7 +80,11 @@ export const useSessionStore = create<SessionState>()(
       addSlide: (slide) =>
         set((state) => ({ slides: [...state.slides, slide] })),
       addScreenshot: (s) =>
-        set((state) => ({ screenshots: [...state.screenshots, s] })),
+        set((state) => ({
+          screenshots: state.screenshots.some((x) => x.proposalId === s.proposalId)
+            ? state.screenshots.map((x) => (x.proposalId === s.proposalId ? s : x))
+            : [...state.screenshots, s],
+        })),
       reset: () => set(initialState),
     }),
     {
