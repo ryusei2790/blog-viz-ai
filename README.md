@@ -9,7 +9,6 @@
 
 ![BlogViz AI - テキスト入力画面](docs/images/step1-input.png)
 
-
 ## 📖 概要
 
 BlogViz AI は、文章だけのブログ記事に解説画像を手軽に追加したいブロガー・テクニカルライター向けのツールです。
@@ -36,9 +35,13 @@ BlogViz AI は、文章だけのブログ記事に解説画像を手軽に追加
 |:--:|:--:|
 | ![テキスト入力](docs/images/step1-input.png) | ![提案カード](docs/images/step3-proposals.png) |
 
-| STEP 3：テーマ選択 |
+| STEP 4：テーマ選択 | STEP 5：画像生成 |
+|:--:|:--:|
+| ![テーマ選択](docs/images/step4-theme.png) | ![画像生成](docs/images/step5-generate.png) |
+
+| STEP 6：ZIP ダウンロード |
 |:--:|
-| ![テーマ選択](docs/images/step4-theme.png) |
+| ![ZIPダウンロード](docs/images/step6-download.png) |
 
 ## 🛠 技術スタック
 
@@ -55,11 +58,11 @@ BlogViz AI は、文章だけのブログ記事に解説画像を手軽に追加
 
 ```mermaid
 flowchart TD
-    A[ブログ本文入力] --> B[POST /api/analyze\nClaude: テキスト構造解析]
-    B --> C[POST /api/propose\nClaude: 画像挿入提案]
+    A[ブログ本文入力] --> B[POST /api/analyze\nAI: テキスト構造解析]
+    B --> C[POST /api/propose\nAI: 画像挿入提案]
     C --> D{ユーザー確認\n不要提案を削除}
     D --> E[テーマ選択\nTech / Minimal / Warm]
-    E --> F[POST /api/generate-html\nClaude: HTMLスライド生成\nPlaywright: PNG化]
+    E --> F[POST /api/generate-html\nAI: HTMLスライド生成\nPlaywright: PNG化]
     F --> G[POST /api/export\nfflate: ZIP生成]
     G --> H[📦 blogviz_images.zip\nimage_01.png〜 + insertion_map.json]
 ```
@@ -104,6 +107,30 @@ npm run dev
 
 `http://localhost:3000` でアクセスできます。
 
+### Chromium のセットアップ
+
+PNG 生成には Chromium（または Google Chrome）が必要です。
+
+**macOS の場合（いずれか）:**
+
+```bash
+# Homebrew で Chromium をインストール
+brew install chromium
+
+# または Google Chrome がインストール済みであればそのまま使用可能
+# → lib/screenshot.ts が自動検出します（CHROMIUM_PATH の設定不要）
+```
+
+**自動検出される macOS パス（優先順）:**
+
+1. `$CHROMIUM_PATH`（環境変数で明示指定した場合）
+2. `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`
+3. `/Applications/Chromium.app/Contents/MacOS/Chromium`
+4. `/opt/homebrew/bin/chromium`
+5. `/usr/local/bin/chromium`
+
+Docker 環境ではシステム Chromium が自動インストールされるため追加設定は不要です。
+
 ### 環境変数
 
 ```bash
@@ -115,10 +142,17 @@ ANTHROPIC_API_KEY=sk-ant-...
 # OPENAI_API_KEY=sk-...
 # GEMINI_API_KEY=...
 
+# Gemini を使う場合はモデルを明示的に指定（gemini-2.0-flash 推奨）
+# GEMINI_MODEL=gemini-2.0-flash
+
 # Chromium のパス（Docker 内は自動設定済み）
 # ローカルの場合: /opt/homebrew/bin/chromium など
 CHROMIUM_PATH=/usr/bin/chromium
 ```
+
+> **Gemini ご利用時の注意**
+> `gemini-1.5-pro` は廃止済みです。`GEMINI_MODEL=gemini-2.0-flash` を明示的に指定してください。
+> 無料枠は 15 RPM / 1,500 RPD のため、連続リクエスト時にレートリミット（429）が発生することがあります。
 
 ## 📤 出力ファイル
 
@@ -144,6 +178,19 @@ ZIP ファイルには以下が含まれます：
   ]
 }
 ```
+
+## ✅ 動作確認状況
+
+E2E テスト（OpenAI gpt-4o-mini）にて全ステップの動作を確認済みです。
+
+| ステップ | 確認状況 | 備考 |
+|:--|:--|:--|
+| STEP 1：テキスト入力 | ✅ 確認済み | |
+| STEP 2：AI 解析 | ✅ 確認済み | OpenAI / Anthropic / Gemini すべて対応 |
+| STEP 3：提案カード表示・削除 | ✅ 確認済み | |
+| STEP 4：テーマ選択 | ✅ 確認済み | Tech / Minimal / Warm |
+| STEP 5：HTML 生成→PNG 変換 | ✅ 確認済み | Google Chrome 自動検出、約 14 秒（5 枚） |
+| STEP 6：ZIP ダウンロード | ✅ 確認済み | 約 101KB、`application/zip` レスポンス |
 
 ## 📄 ライセンス
 

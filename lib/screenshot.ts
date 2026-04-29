@@ -8,6 +8,7 @@
  */
 
 import { chromium } from 'playwright-core';
+import { existsSync } from 'fs';
 
 /** スクリーンショットの幅（px） */
 const SLIDE_WIDTH = 800;
@@ -20,10 +21,21 @@ const SLIDE_HEIGHT = 450;
  * @param html - 800×450px のスライド HTML
  * @returns PNG バイナリバッファ
  */
+/** macOS でよく存在するブラウザパスの候補（優先順） */
+const MAC_BROWSER_CANDIDATES = [
+  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  '/Applications/Chromium.app/Contents/MacOS/Chromium',
+  '/opt/homebrew/bin/chromium',
+  '/usr/local/bin/chromium',
+];
+
 export async function captureHtml(html: string): Promise<Buffer> {
-  // CHROMIUM_PATH 未設定の場合は Railway Docker 内のデフォルトパスを使用
+  // CHROMIUM_PATH 環境変数（存在確認済み）→ macOS 候補 → Docker デフォルトの順で解決
+  const envPath = process.env.CHROMIUM_PATH;
   const executablePath =
-    process.env.CHROMIUM_PATH ?? '/usr/bin/chromium';
+    (envPath && existsSync(envPath) ? envPath : null) ??
+    MAC_BROWSER_CANDIDATES.find((p) => existsSync(p)) ??
+    '/usr/bin/chromium';
 
   const browser = await chromium.launch({
     executablePath,
